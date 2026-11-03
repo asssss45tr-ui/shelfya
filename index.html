@@ -1,0 +1,467 @@
+
+cat > index.html <<'EOF'
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="قفسه‌یار؛ ثبت و مقایسه تصویری قفسه‌ها">
+  <link rel="manifest" href="manifest.json">
+  <title>قفسه‌یار | ShelfYar</title>
+  <style>
+    :root{--bg:#0b1220;--panel:#131e30;--panel2:#1a2940;--text:#edf4ff;--muted:#9aabc2;--accent:#28c7a5;--red:#ff626e;--line:#293950}
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:Tahoma,Arial,sans-serif}
+    header{padding:22px 18px 16px;background:linear-gradient(130deg,#14263b,#0c1728);border-bottom:1px solid var(--line)}
+    header .top{display:flex;align-items:center;gap:12px}
+    .logo{width:46px;height:46px;border-radius:15px;background:var(--accent);color:#06251f;display:grid;place-items:center;font-size:25px;font-weight:bold}
+    h1{font-size:21px;margin:0 0 5px}
+    header p{margin:0;color:var(--muted);font-size:12px}
+    main{max-width:850px;margin:auto;padding:16px 14px 40px}
+    .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:14px}
+    h2{font-size:16px;margin:0 0 14px}
+    label{display:block;color:var(--muted);font-size:12px;margin:12px 0 7px}
+    input,select{width:100%;padding:13px;border-radius:11px;border:1px solid var(--line);background:#0c1728;color:var(--text);font:inherit;outline:none}
+    button{border:0;border-radius:12px;padding:13px 15px;font:inherit;font-size:13px;font-weight:bold;cursor:pointer}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    .primary{background:var(--accent);color:#06251f}
+    .secondary{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+    .danger{background:#512631;color:#ffdce0}
+    .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+    .actions button{flex:1;min-width:130px}
+    .muted{color:var(--muted);font-size:12px;line-height:1.9}
+    .camera-wrap{display:none;background:#05090f;border-radius:14px;overflow:hidden;position:relative;margin-top:12px}
+    video{display:block;width:100%;max-height:65vh;object-fit:contain;background:#05090f}
+    .camera-actions{display:flex;gap:8px;padding:10px}
+    .camera-actions button{flex:1}
+    .preview{width:100%;max-height:340px;object-fit:contain;background:#07101c;border-radius:12px;margin-top:12px;display:none}
+    .stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+    .stat{background:#0d192a;border:1px solid var(--line);padding:13px;border-radius:13px}
+    .stat strong{font-size:23px;display:block;color:var(--accent);margin-bottom:5px}
+    .stat span{font-size:11px;color:var(--muted)}
+    .report{border-top:1px solid var(--line);padding:12px 0}
+    .report:first-child{border:0}
+    .report img{width:100%;max-height:240px;object-fit:contain;background:#07101c;border-radius:10px;margin-top:8px}
+    .hidden{display:none!important}
+    .notice{padding:11px;border-radius:10px;background:#172b3a;color:#bdeee4;font-size:12px;line-height:1.8;margin-top:10px}
+    footer{text-align:center;color:#71839b;font-size:11px;padding:12px}
+    @media(min-width:650px){.stats{grid-template-columns:repeat(4,1fr)}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="logo">ق</div>
+    <div>
+      <h1>قفسه‌یار</h1>
+      <p>ShelfYar · مدیریت تصویری و مقایسه قفسه‌ها</p>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>نمای کلی</h2>
+    <div class="stats">
+      <div class="stat"><strong id="shelfCount">۰</strong><span>قفسه ثبت‌شده</span></div>
+      <div class="stat"><strong id="reportCount">۰</strong><span>گزارش مقایسه</span></div>
+      <div class="stat"><strong id="lastChange">—</strong><span>آخرین وضعیت</span></div>
+      <div class="stat"><strong id="storageState">فعال</strong><span>ذخیره‌سازی دستگاه</span></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>۱. انتخاب یا ایجاد قفسه</h2>
+    <label for="shelfSelect">قفسه‌های ذخیره‌شده</label>
+    <select id="shelfSelect"><option value="">هنوز قفسه‌ای ثبت نشده</option></select>
+    <label for="shelfName">نام قفسه جدید</label>
+    <input id="shelfName" placeholder="مثلاً قفسه مواد غذایی - ردیف اول">
+    <div class="actions">
+      <button class="primary" id="createShelf">ایجاد قفسه</button>
+      <button class="secondary" id="deleteShelf">حذف قفسه انتخاب‌شده</button>
+    </div>
+    <div class="notice">برای هر قفسه یک عکس مرجع ثبت کن. دفعات بعد عکس جدید را از همان زاویه بگیر تا مقایسه دقیق‌تر باشد.</div>
+  </section>
+
+  <section class="card">
+    <h2>۲. ثبت عکس قفسه</h2>
+    <p class="muted">دوربین را باز کن، قفسه را در کادر قرار بده و عکس مرجع یا عکس جدید بگیر.</p>
+    <div class="actions">
+      <button class="primary" id="openCamera">باز کردن دوربین</button>
+      <button class="secondary" id="switchCamera">تعویض دوربین</button>
+    </div>
+    <div class="camera-wrap" id="cameraWrap">
+      <video id="video" autoplay playsinline muted></video>
+      <div class="camera-actions">
+        <button class="primary" id="capturePhoto">ثبت عکس</button>
+        <button class="secondary" id="closeCamera">بستن دوربین</button>
+      </div>
+    </div>
+    <canvas id="workCanvas" class="hidden"></canvas>
+    <img id="referencePreview" class="preview" alt="عکس مرجع">
+    <img id="currentPreview" class="preview" alt="عکس جدید">
+    <div class="actions">
+      <button class="secondary" id="saveReference">ذخیره عکس به‌عنوان مرجع</button>
+      <button class="primary" id="comparePhotos">مقایسه با عکس مرجع</button>
+    </div>
+    <p class="muted" id="photoStatus">هنوز عکسی ثبت نشده است.</p>
+  </section>
+
+  <section class="card">
+    <h2>۳. نتیجه مقایسه</h2>
+    <p class="muted">مناطق دارای اختلاف تصویری با رنگ قرمز مشخص می‌شوند. نور، زاویه و فاصله دوربین می‌توانند روی نتیجه اثر بگذارند.</p>
+    <img id="resultPreview" class="preview" alt="نتیجه مقایسه">
+    <p class="muted" id="resultText">هنوز گزارشی برای نمایش وجود ندارد.</p>
+  </section>
+
+  <section class="card">
+    <h2>۴. گزارش‌های ذخیره‌شده</h2>
+    <div id="reportsList" class="muted">گزارشی ثبت نشده است.</div>
+  </section>
+
+  <section class="card">
+    <h2>۵. پشتیبان‌گیری</h2>
+    <p class="muted">اطلاعات قفسه‌ها و گزارش‌ها در حافظه همین دستگاه ذخیره می‌شود. برای انتقال اطلاعات، نسخه پشتیبان بگیر.</p>
+    <div class="actions">
+      <button class="secondary" id="exportData">خروجی پشتیبان</button>
+      <button class="secondary" id="importButton">بازیابی پشتیبان</button>
+      <input type="file" id="importFile" accept="application/json,.json" class="hidden">
+    </div>
+  </section>
+  <footer>قفسه‌یار · نسخه آزمایشی مستقل</footer>
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
+EOF
+
+cat > app.js <<'EOF'
+"use strict";
+
+const $ = id => document.getElementById(id);
+const DB_NAME = "ShelfYarDB";
+const DB_VERSION = 1;
+let db;
+let stream = null;
+let facing = "environment";
+let referenceImage = null;
+let currentImage = null;
+let selectedShelf = "";
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = () => {
+      const d = request.result;
+      if (!d.objectStoreNames.contains("shelves")) d.createObjectStore("shelves", {keyPath:"id"});
+      if (!d.objectStoreNames.contains("reports")) d.createObjectStore("reports", {keyPath:"id"});
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error);
+  });
+}
+function store(name, mode="readonly") {
+  return db.transaction(name, mode).objectStore(name);
+}
+function all(name) {
+  return new Promise((resolve,reject)=>{
+    const r=store(name).getAll();
+    r.onsuccess=()=>resolve(r.result || []);
+    r.onerror=()=>reject(r.error);
+  });
+}
+function put(name,value) {
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(name,"readwrite");
+    tx.objectStore(name).put(value);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+  });
+}
+function remove(name,id) {
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(name,"readwrite");
+    tx.objectStore(name).delete(id);
+    tx.oncomplete=()=>resolve();
+    tx.onerror=()=>reject(tx.error);
+  });
+}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,8)}
+function fa(n){return Number(n).toLocaleString("fa-IR")}
+function message(text){$("photoStatus").textContent=text}
+function selected(){return $("shelfSelect").value}
+function stopCamera(){
+  if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
+  $("video").srcObject=null;
+  $("cameraWrap").style.display="none";
+}
+async function openCamera(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    alert("دسترسی دوربین در این آدرس پشتیبانی نمی‌شود. صفحه را از localhost باز کن و مجوز دوربین مرورگر را فعال کن.");
+    return;
+  }
+  stopCamera();
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({
+      audio:false,
+      video:{facingMode:{ideal:facing},width:{ideal:1920},height:{ideal:1080}}
+    });
+    $("video").srcObject=stream;
+    $("cameraWrap").style.display="block";
+    await $("video").play();
+  }catch(err){
+    alert("دوربین باز نشد: "+err.message+"\nمجوز دوربین مرورگر را بررسی کن و مطمئن شو برنامه دیگری از دوربین استفاده نمی‌کند.");
+  }
+}
+function capture(){
+  const v=$("video");
+  if(!stream || !v.videoWidth){alert("ابتدا دوربین را باز کن.");return;}
+  const c=document.createElement("canvas");
+  c.width=v.videoWidth;c.height=v.videoHeight;
+  c.getContext("2d").drawImage(v,0,0,c.width,c.height);
+  currentImage=c.toDataURL("image/jpeg",.88);
+  $("currentPreview").src=currentImage;
+  $("currentPreview").style.display="block";
+  message("عکس جدید ثبت شد. اگر این اولین عکس است، آن را به‌عنوان مرجع ذخیره کن.");
+}
+function loadImage(src){
+  return new Promise((resolve,reject)=>{
+    const img=new Image();
+    img.onload=()=>resolve(img);
+    img.onerror=reject;
+    img.src=src;
+  });
+}
+async function refresh(){
+  const shelves=await all("shelves");
+  const reports=await all("reports");
+  const sel=$("shelfSelect");
+  const old=selectedShelf || sel.value;
+  sel.innerHTML="";
+  if(!shelves.length){
+    sel.add(new Option("هنوز قفسه‌ای ثبت نشده",""));
+    selectedShelf="";
+  }else{
+    shelves.sort((a,b)=>b.created-a.created);
+    shelves.forEach(s=>sel.add(new Option(s.name,s.id)));
+    selectedShelf=shelves.some(s=>s.id===old)?old:shelves[0].id;
+    sel.value=selectedShelf;
+  }
+  $("shelfCount").textContent=fa(shelves.length);
+  $("reportCount").textContent=fa(reports.length);
+  $("lastChange").textContent=reports.length? "ثبت‌شده":"—";
+  $("reportsList").innerHTML="";
+  if(!reports.length){$("reportsList").textContent="گزارشی ثبت نشده است.";}
+  reports.sort((a,b)=>b.created-a.created).slice(0,20).forEach(r=>{
+    const div=document.createElement("div");
+    div.className="report";
+    const title=document.createElement("strong");
+    title.textContent=r.shelfName+" · "+new Date(r.created).toLocaleString("fa-IR");
+    const p=document.createElement("p");
+    p.textContent="میزان اختلاف تصویری: "+fa(r.percent)+"٪";
+    const img=document.createElement("img");
+    img.src=r.image;img.alt="گزارش مقایسه";
+    div.append(title,p,img);
+    $("reportsList").append(div);
+  });
+  await loadShelf();
+}
+async function loadShelf(){
+  const id=selected();
+  selectedShelf=id;
+  const shelves=await all("shelves");
+  const shelf=shelves.find(s=>s.id===id);
+  referenceImage=shelf?.reference || null;
+  $("referencePreview").style.display=referenceImage?"block":"none";
+  if(referenceImage)$("referencePreview").src=referenceImage;
+  else $("referencePreview").removeAttribute("src");
+  $("resultPreview").style.display="none";
+  $("resultText").textContent="برای مشاهده نتیجه، عکس جدید بگیر و مقایسه را اجرا کن.";
+  currentImage=null;
+  $("currentPreview").style.display="none";
+  message(shelf?"قفسه انتخاب‌شده: "+shelf.name:"ابتدا یک قفسه ایجاد کن.");
+}
+async function compare(){
+  const id=selected();
+  if(!id){alert("ابتدا یک قفسه انتخاب یا ایجاد کن.");return;}
+  if(!referenceImage){alert("برای این قفسه هنوز عکس مرجع ذخیره نشده است.");return;}
+  if(!currentImage){alert("ابتدا با دوربین عکس جدید بگیر.");return;}
+  try{
+    const [a,b]=await Promise.all([loadImage(referenceImage),loadImage(currentImage)]);
+    const w=320,h=Math.max(1,Math.round(320*a.height/a.width));
+    const c1=document.createElement("canvas"),c2=document.createElement("canvas");
+    c1.width=c2.width=w;c1.height=c2.height=h;
+    const x1=c1.getContext("2d",{willReadFrequently:true});
+    const x2=c2.getContext("2d",{willReadFrequently:true});
+    x1.drawImage(a,0,0,w,h);x2.drawImage(b,0,0,w,h);
+    const d1=x1.getImageData(0,0,w,h),d2=x2.getImageData(0,0,w,h);
+    const out=x2.createImageData(w,h);
+    let changed=0;
+    for(let i=0;i<d1.data.length;i+=4){
+      const diff=(Math.abs(d1.data[i]-d2.data[i])+Math.abs(d1.data[i+1]-d2.data[i+1])+Math.abs(d1.data[i+2]-d2.data[i+2]))/3;
+      if(diff>38){
+        out.data[i]=255;out.data[i+1]=45;out.data[i+2]=65;out.data[i+3]=175;changed++;
+      }else{
+        out.data[i]=d2.data[i];out.data[i+1]=d2.data[i+1];out.data[i+2]=d2.data[i+2];out.data[i+3]=95;
+      }
+    }
+    const overlay=document.createElement("canvas");
+    overlay.width=w;overlay.height=h;
+    overlay.getContext("2d").putImageData(out,0,0);
+    const result=overlay.toDataURL("image/jpeg",.85);
+    const percent=+(changed/(w*h)*100).toFixed(1);
+    $("resultPreview").src=result;
+    $("resultPreview").style.display="block";
+    $("resultText").textContent="حدود "+fa(percent)+"٪ از سطح تصویر دارای اختلاف قابل‌تشخیص است. این عدد درصد تغییر پیکسل‌هاست، نه درصد کالاهای جابه‌جا‌شده.";
+    const shelves=await all("shelves");
+    const shelf=shelves.find(s=>s.id===id);
+    await put("reports",{id:uid(),shelfId:id,shelfName:shelf?.name||"قفسه",created:Date.now(),percent,image:result});
+    message("مقایسه انجام شد و گزارش ذخیره شد.");
+    await refresh();
+  }catch(e){
+    alert("مقایسه انجام نشد: "+e.message);
+  }
+}
+async function createShelf(){
+  const name=$("shelfName").value.trim();
+  if(!name){alert("نام قفسه را وارد کن.");return;}
+  const id=uid();
+  await put("shelves",{id,name,created:Date.now(),reference:null});
+  $("shelfName").value="";
+  selectedShelf=id;
+  await refresh();
+  message("قفسه جدید ایجاد شد: "+name);
+}
+async function saveReference(){
+  const id=selected();
+  if(!id){alert("ابتدا یک قفسه ایجاد کن.");return;}
+  if(!currentImage){alert("ابتدا با دوربین عکس بگیر.");return;}
+  const shelves=await all("shelves");
+  const shelf=shelves.find(s=>s.id===id);
+  if(!shelf)return;
+  shelf.reference=currentImage;
+  shelf.updated=Date.now();
+  await put("shelves",shelf);
+  referenceImage=currentImage;
+  $("referencePreview").src=referenceImage;
+  $("referencePreview").style.display="block";
+  message("عکس مرجع قفسه ذخیره شد.");
+}
+async function deleteShelf(){
+  const id=selected();
+  if(!id)return;
+  if(!confirm("قفسه انتخاب‌شده حذف شود؟ گزارش‌های آن نیز حذف خواهند شد."))return;
+  await remove("shelves",id);
+  const reports=await all("reports");
+  for(const r of reports)if(r.shelfId===id)await remove("reports",r.id);
+  selectedShelf="";
+  await refresh();
+  message("قفسه حذف شد.");
+}
+async function exportData(){
+  const data={app:"ShelfYar",version:1,created:new Date().toISOString(),shelves:await all("shelves"),reports:await all("reports")};
+  const blob=new Blob([JSON.stringify(data)],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;a.download="shelfyar-backup-"+Date.now()+".json";a.click();
+  URL.revokeObjectURL(url);
+}
+async function importData(file){
+  try{
+    const data=JSON.parse(await file.text());
+    if(data.app!=="ShelfYar"||!Array.isArray(data.shelves)||!Array.isArray(data.reports))throw new Error("ساختار فایل پشتیبان معتبر نیست.");
+    for(const s of data.shelves)await put("shelves",s);
+    for(const r of data.reports)await put("reports",r);
+    await refresh();
+    alert("بازیابی اطلاعات انجام شد.");
+  }catch(e){alert("بازیابی ناموفق بود: "+e.message);}
+}
+
+$("openCamera").addEventListener("click",openCamera);
+$("closeCamera").addEventListener("click",stopCamera);
+$("capturePhoto").addEventListener("click",capture);
+$("switchCamera").addEventListener("click",()=>{facing=facing==="environment"?"user":"environment";openCamera();});
+$("createShelf").addEventListener("click",createShelf);
+$("deleteShelf").addEventListener("click",deleteShelf);
+$("saveReference").addEventListener("click",saveReference);
+$("comparePhotos").addEventListener("click",compare);
+$("shelfSelect").addEventListener("change",loadShelf);
+$("exportData").addEventListener("click",exportData);
+$("importButton").addEventListener("click",()=>$("importFile").click());
+$("importFile").addEventListener("change",e=>{if(e.target.files[0])importData(e.target.files[0]);e.target.value="";});
+window.addEventListener("beforeunload",stopCamera);
+
+(async()=>{
+  try{
+    db=await openDB();
+    await refresh();
+    if("serviceWorker" in navigator)navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }catch(e){
+    $("storageState").textContent="خطا";
+    alert("راه‌اندازی ذخیره‌سازی انجام نشد: "+e.message);
+  }
+})();
+EOF
+
+cat > manifest.json <<'EOF'
+{
+  "name": "قفسه‌یار",
+  "short_name": "قفسه‌یار",
+  "description": "ثبت و مقایسه تصویری قفسه‌ها",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0b1220",
+  "theme_color": "#101827",
+  "lang": "fa",
+  "dir": "rtl"
+}
+EOF
+
+cat > sw.js <<'EOF'
+const CACHE_NAME = "shelfyar-cache-v1";
+const FILES = ["./", "./index.html", "./app.js", "./manifest.json"];
+
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(FILES)));
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(keys => Promise.all(
+      keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+    ))
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") return;
+  event.respondWith(
+    caches.match(event.request).then(cached => {
+      if (cached) return cached;
+      return fetch(event.request).then(response => {
+        if (response && response.status === 200 && new URL(event.request.url).origin === self.location.origin) {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy));
+        }
+        return response;
+      });
+    }).catch(() => caches.match("./index.html"))
+  );
+});
+EOF
+
+cat > README.md <<'EOF'
+# قفسه‌یار | ShelfYar
+
+برنامه وب فارسی برای ثبت عکس مرجع قفسه و مقایسه عکس‌های بعدی.
+
+## اجرا در Termux
+
+```bash
+cd ~/shelfyar
+python3 -m http.server 8090
